@@ -11,7 +11,7 @@ Resources:
   DynamoDBMonitorTable:
     Type: AWS::DynamoDB::Table
     Properties:
-      TableName: DynamoDBMonitorTable
+      TableName: AviDynamoDBMonitorTable
       AttributeDefinitions:
         - AttributeName: Id
           AttributeType: S
