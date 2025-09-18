@@ -1,60 +1,46 @@
-DynamoDBSystemErrorTopic:
-  Type: AWS::SNS::Topic
-  Properties:
-    TopicName: !Sub
-      - 'avi-cf-testing-DynamoDBSystemErrorTopic'
-    DisplayName: !Sub
-      - 'avi-cf-testing-DynamoDBSystemErrorTopic'
+AWSTemplateFormatVersion: '2010-09-09'
+Description: DynamoDB monitoring with CloudWatch Alarm and SNS notification
 
-DynamoDBSystemErrorTopicPolicy:
-  Type: AWS::SNS::TopicPolicy
-  Properties:
-    PolicyDocument:
-      Id: DynamoDBSystemErrorTopicPolicy
-      Version: '2012-10-17'
-      Statement:
-        - Sid: "Allow_Publish_Alarms"
-          Effect: Allow
-          Principal:
-            Service: cloudwatch.amazonaws.com
-          Action:
-            - sns:Publish
-          Resource: !Ref DynamoDBSystemErrorTopic
-    Topics: [ !Ref 'DynamoDBSystemErrorTopic' ]
+Parameters:
+  AlertEmail:
+    Type: String
+    Default: avi.altcheh@ibm.com
+    Description: Email address to receive DynamoDB error alerts
 
-DynamoDBMonitorTable:
-  Type: AWS::DynamoDB::Table
-  Properties:
-    TableName: !Sub
-      - 'avi-cf-testing-dynamodb-monitor-testing'
-    BillingMode: PAY_PER_REQUEST
-    AttributeDefinitions:
-      - AttributeName: id
-        AttributeType: S
-    KeySchema:
-      - AttributeName: id
-        KeyType: HASH
-    Tags:
-      - Key: Purpose
-        Value: Monitoring
+Resources:
+  DynamoDBMonitorTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: DynamoDBMonitorTable
+      AttributeDefinitions:
+        - AttributeName: Id
+          AttributeType: S
+      KeySchema:
+        - AttributeName: Id
+          KeyType: HASH
+      BillingMode: PAY_PER_REQUEST
 
-DynamoDBSystemErrorsAlarm:
-  Type: AWS::CloudWatch::Alarm
-  Properties:
-    AlarmName: !Sub
-      - 'avi-cf-testing-DynamoDBSystemErrorsAlarm'
-    AlarmDescription: "Alarm when DynamoDB system errors are greater than 0"
-    Namespace: "AWS/DynamoDB"
-    MetricName: "SystemErrors"
-    Dimensions:
-      - Name: TableName
-        Value: !Ref DynamoDBMonitorTable
-    Statistic: "Sum"
-    Period: 86400  # 1 day in seconds
-    EvaluationPeriods: 1
-    Threshold: 0
-    ComparisonOperator: "GreaterThanThreshold"
-    TreatMissingData: "notBreaching"
-    ActionsEnabled: true
-    AlarmActions:
-      - !Ref DynamoDBSystemErrorTopic
+  DynamoDBSystemErrorTopic:
+    Type: AWS::SNS::Topic
+    Properties:
+      DisplayName: DynamoDB System Errors Alert
+      Subscription:
+        - Protocol: email
+          Endpoint: !Ref AlertEmail
+
+  DynamoDBSystemErrorsAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmDescription: "Alarm if DynamoDB table has any system errors"
+      Namespace: AWS/DynamoDB
+      MetricName: SystemErrors
+      Dimensions:
+        - Name: TableName
+          Value: !Ref DynamoDBMonitorTable
+      Statistic: Sum
+      Period: 60
+      EvaluationPeriods: 1
+      Threshold: 1
+      ComparisonOperator: GreaterThanOrEqualToThreshold
+      AlarmActions:
+        - !Ref DynamoDBSystemErrorTopic
