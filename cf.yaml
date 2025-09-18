@@ -1,0 +1,60 @@
+  DynamoDBSystemErrorTopic:
+    Type: AWS::SNS::Topic
+    Properties:
+      TopicName: !Sub
+        - 'avi-cf-testing-DynamoDBSystemErrorTopic'
+      DisplayName: !Sub
+        - 'avi-cf-testing-DynamoDBSystemErrorTopic'
+
+  DynamoDBSystemErrorTopicPolicy:
+    Type: AWS::SNS::TopicPolicy
+    Properties:
+      PolicyDocument:
+        Id: DynamoDBSystemErrorTopicPolicy
+        Version: '2012-10-17'
+        Statement:
+          - Sid: "Allow_Publish_Alarms"
+            Effect: Allow
+            Principal:
+              Service: cloudwatch.amazonaws.com
+            Action:
+              - sns:Publish
+            Resource: !Ref DynamoDBSystemErrorTopic
+      Topics: [ !Ref 'DynamoDBSystemErrorTopic' ]
+
+  DynamoDBMonitorTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: !Sub
+        - 'avi-cf-testing-dynamodb-monitor-testing'
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: id
+          AttributeType: S
+      KeySchema:
+        - AttributeName: id
+          KeyType: HASH
+      Tags:
+        - Key: Purpose
+          Value: Monitoring
+
+  DynamoDBSystemErrorsAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: !Sub
+        - 'avi-cf-testing-DynamoDBSystemErrorsAlarm'
+      AlarmDescription: "Alarm when DynamoDB system errors are greater than 0"
+      Namespace: "AWS/DynamoDB"
+      MetricName: "SystemErrors"
+      Dimensions:
+        - Name: TableName
+          Value: !Ref DynamoDBMonitorTable
+      Statistic: "Sum"
+      Period: 86400  # 1 day in seconds
+      EvaluationPeriods: 1
+      Threshold: 0
+      ComparisonOperator: "GreaterThanThreshold"
+      TreatMissingData: "notBreaching"
+      ActionsEnabled: true
+      AlarmActions:
+        - !Ref DynamoDBSystemErrorTopic
