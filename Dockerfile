@@ -1,1 +1,1 @@
-echo "Hello pipeline"
+RUN echo "Hello pipeline"
