@@ -16,7 +16,7 @@ Resources:
         - AttributeName: Id
           AttributeType: S
       KeySchema:
-        - AttributeName: Id
+        - AttributeName: Id 
           KeyType: HASH
       BillingMode: PAY_PER_REQUEST
 
