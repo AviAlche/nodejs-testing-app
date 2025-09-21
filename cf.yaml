@@ -12,7 +12,7 @@ Resources:
     Type: AWS::DynamoDB::Table
     Properties:
       TableName: AviDynamoDBMonitorTable
-      AttributeDefinitions:
+      AttributeDefinitions: 
         - AttributeName: Id
           AttributeType: S
       KeySchema:
